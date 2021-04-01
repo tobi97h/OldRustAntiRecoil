@@ -11,13 +11,17 @@ def calc(weapon):
     weapon_y = []
     shot_ms = []
 
-    # movement needs to happen a little before the next shot
-    ms_passed = -30
+   
+    ms_passed = 0
     for val in weapon.values:
         weapon_x.append(val[0])
         weapon_y.append(val[1])
         shot_ms.append(ms_passed)
-        ms_passed+=weapon.ms_per_shot
+        # movement needs to happen a little before the next shot
+        if ms_passed == 0:
+            ms_passed+=weapon.ms_per_shot - 30
+        else:
+            ms_passed+=weapon.ms_per_shot
 
 
     total_ms = int(weapon.shots * (weapon.ms_per_shot-5))
