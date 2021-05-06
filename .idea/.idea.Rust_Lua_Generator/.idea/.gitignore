@@ -1,0 +1,13 @@
+﻿# Default ignored files
+/shelf/
+/workspace.xml
+# Rider ignored files
+/contentModel.xml
+/modules.xml
+/projectSettingsUpdater.xml
+/.idea.Rust_Lua_Generator.iml
+# Datasource local storage ignored files
+/../../../../../../:\private_projects\Rust_Recoil_Lua\.idea\.idea.Rust_Lua_Generator\.idea/dataSources/
+/dataSources.local.xml
+# Editor-based HTTP Client requests
+/httpRequests/
