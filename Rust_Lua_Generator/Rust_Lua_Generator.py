@@ -3,6 +3,10 @@ from matplotlib import pyplot as plt
 import math
 from scipy.interpolate import make_interp_spline, BSpline
 
+sens = 0.5
+fov = 90 - 67.5
+px_factor = 1 / (0.03 * (sens * 3) * (fov / 100))
+
 def calc(weapon):
     
     weapon.values.insert(0, [0, 0])
@@ -17,11 +21,7 @@ def calc(weapon):
         weapon_x.append(val[0])
         weapon_y.append(val[1])
         shot_ms.append(ms_passed)
-        # offset the movement by a few ms, that way the compensation for the shot will guaranteed be finished before the next one starts
-        if ms_passed == 0:
-            ms_passed+=weapon.ms_per_shot - 10
-        else:
-            ms_passed+=weapon.ms_per_shot
+        ms_passed+=weapon.ms_per_shot
 
 
     total_ms = int(weapon.shots * weapon.ms_per_shot)

@@ -213,6 +213,7 @@ namespace Overlay
             string[] options = new string[] { 
                 "ak vanilla", 
                 "ak holo", 
+                "ak 8x", 
                 "mp5 vanilla", 
                 "mp5 holo", 
                 "smg vanilla", 
