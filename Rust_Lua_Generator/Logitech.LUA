@@ -18,34 +18,37 @@ sens = 0.3731
 -- full auto, nickname, fov_change, recoil change (for example for silencers), base value set key
 -- semi, nickname, fov_change, move down per shot
 options = {
-	{true, "ak vanilla", 0, 1, "ak"},
-	{true, "ak holo", -15, 1, "ak"},
-	{true, "ak 8x", -66.7, 1, "ak"},
-	{true, "mp5 vanilla", 0, 1, "mp5"},
-	{true, "mp5 holo", -15, 1, "mp5"},
-	{true, "smg vanilla", 20, 1, "smg"},
-	{true, "smg holo", -15, 1, "smg"},
-	{true, "thompson vanilla", 20, 1, "thompson"},
-	{true, "thompson holo", -15, 1, "thompson"},
-	{true, "lr vanilla", 0, 1, "lr"},
-	{true, "lr holo", -15, 1, "lr"},
-	{true, "lr 8x", -66.7, 1, "lr"},
-	{true, "m2 vanilla", 0, 0.5, "m2"},
-	{true, "m2 holo", -15, 0.5, "m2"},
-	{true, "m2 8x", -66.7, 0.5, "m2"},
-	{false, "python", 33, 8},
-	{false, "sar", 0, 3.25},
+	{"ak vanilla", 1, 1, "ak"},
+	{"ak holo", 1.245, 1, "ak"},
+	{"ak holo silencer", -15, 0.8, "ak"},
+	{"mp5 vanilla", 0, 1, "mp5"},
+	{"mp5 holo", -15, 1, "mp5"},
+	{"smg vanilla", 20, 1, "smg"},
+	{"smg holo", -15, 1, "smg"},
+	{"thompson vanilla", 20, 1, "thompson"},
+	{"thompson holo", -15, 1, "thompson"},
+	{"lr vanilla", 0, 1, "lr"},
+	{"lr holo", -15, 1, "lr"},
+	{"lr 8x", -66.7, 1, "lr"},
+	{"m2 8x", -66.7, 0.5, "m2"},
+	{"m2 8x silencer", -66.7, 0.48, "m2"},
+
 }
 
 selected = 1
 
 function FullAutoRecoil(start_ms, option)
-	values = weapons[option[5]]
-	fov_change = option[3]
-	adjusted_fov = fov_base + fov_change
-	recoil_change = option[4]
+	values = weapons[option[4]]
+	fov_change_factor = option[2]
+	recoil_change = option[3]
+	
+	fov_factor = (fov_base) / 360
 
-	px_factor = 1 / (0.03 * (sens * 3) * (adjusted_fov/ 100)) * recoil_change
+	zoom = 1.6666666269302368
+
+	multiplier = fov_factor * sens
+
+	OutputLogMessage("multiplier %f\n", multiplier)
 
 	-- needed for calcing the diff to move
 	last_position = {0, 0}
@@ -73,7 +76,7 @@ function FullAutoRecoil(start_ms, option)
 			now_move_y = position[2] - last_position[2]
 
 			-- calculate pixel to move
-			move_y_px = now_move_y * px_factor * y_adjust
+			move_y_px = now_move_y / multiplier * y_adjust * zoom
 
 			-- add left over pixel from previous iteration
 			move_y_px = move_y_px + y_px_pool
@@ -90,7 +93,7 @@ function FullAutoRecoil(start_ms, option)
 			-- same for x
 			now_move_x = position[1] - last_position[1]
 
-			move_x_px = now_move_x * px_factor * x_adjust
+			move_x_px = now_move_x / multiplier * x_adjust * zoom
 
 			move_x_px = move_x_px + x_px_pool
 
@@ -107,36 +110,6 @@ function FullAutoRecoil(start_ms, option)
 	until not IsMouseButtonPressed(1)
 end
 
-function SemiRecoil(option)
-	fov_change = option[3]
-	adjusted_fov = fov_base + fov_change
-	raw_move = option[4]
-
-	px_factor = 1 / (0.03 * (sens * 3) * (adjusted_fov/ 100))
-
-	total_move = raw_move * px_factor
-
-	if IsModifierPressed("ctrl") then
-		total_move = total_move / 2
-	end
-
-	while(total_move > 0 and IsMouseButtonPressed(3))
-	do
-		-- split total move up in random parts
-		random_move = math.random(25, 30)
-		if (random_move > total_move) then
-			-- dont overcompensate
-			random_move = total_move
-		end
-
-		MoveMouseRelative(0, math.floor(random_move))
-
-		total_move = total_move - random_move
-		Sleep(1)
-	end
-
-end
-
 function OnEvent(event, arg)
 
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 1 and activated) then
@@ -144,11 +117,9 @@ function OnEvent(event, arg)
 		start_ms = GetRunningTime()
 
 		option = options[selected]
-		if(option[1]) then
-			FullAutoRecoil(start_ms, option)
-		else
-			SemiRecoil(option)
-		end
+		
+		FullAutoRecoil(start_ms, option)
+		
     end
 
 	-- enable trigger on mouse one
@@ -158,12 +129,12 @@ function OnEvent(event, arg)
 
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 5) then
         legit = not legit
-        OutputLogMessage("legit: %s - %s\n", tostring(legit), options[selected][2])
+        OutputLogMessage("legit: %s - %s\n", tostring(legit), options[selected][1])
     end
 
     if (event == "MOUSE_BUTTON_PRESSED" and arg == 3) then
         activated = not activated
-        OutputLogMessage("activated: %s - %s\n", tostring(activated), options[selected][2])
+        OutputLogMessage("activated: %s - %s\n", tostring(activated), options[selected][1])
     end
 
 	-- change weapon button
@@ -173,7 +144,7 @@ function OnEvent(event, arg)
         else
             selected = selected +1
         end
-        OutputLogMessage("Selected: %s\n", options[selected][2])
+        OutputLogMessage("Selected: %s\n", options[selected][1])
     end 
 end
 
