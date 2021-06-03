@@ -145,13 +145,21 @@ function OnEvent(event, arg)
 
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 6) then
         legit = not legit
-        OutputLogMessage("legit: %s - %s\n", tostring(legit), weapon_options[selected_weapon][1])
+        if (legit) then
+        	OutputLogMessage("Legit mode activated")
+        else
+        	OutputLogMessage("Unreal mode activated")
+        end
     end
 
     if (event == "MOUSE_BUTTON_PRESSED" and arg == 3) then
         activated = not activated
-        OutputLogMessage("activated: %s - %s\n", tostring(activated), weapon_options[selected_weapon][1])
-        print_attachments()
+        if (activated) then
+        	OutputLogMessage("Script activated: %s\n", weapon_options[selected_weapon][1])
+        	print_attachments()
+        else
+        	OutputLogMessage("Script deactivated")
+        end        
     end
 
 	-- change attachments
@@ -171,18 +179,16 @@ function OnEvent(event, arg)
         else
             selected_weapon = selected_weapon +1
         end
-        OutputLogMessage("Selected: %s\n", weapon_options[selected_weapon][1])
+        OutputLogMessage("Weapon: %s\n", weapon_options[selected_weapon][1])
         print_attachments()
     end 
 end
 
 function print_attachments() 
-    OutputLogMessage("Selected attachments ")
+    OutputLogMessage("Attachments:\n")
 	for index, attachment in ipairs(attachment_options[selected_attachment]) do
-		OutputLogMessage("%s ", attachment)
+		OutputLogMessage("-%s\n", attachment)
 	end
-
-	OutputLogMessage("\n")
 end
 
 function contains_value (tab, val)
