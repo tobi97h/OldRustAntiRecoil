@@ -225,7 +225,9 @@ namespace Overlay
                 "lr 8x", 
                 "m2 vanilla", 
                 "m2 holo", 
-                "m2 8x"
+                "m2 8x",
+                "python",
+                "sar"
             };
 
             int current_option = 0;

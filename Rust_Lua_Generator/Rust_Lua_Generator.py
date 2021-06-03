@@ -20,8 +20,14 @@ def calc(weapon):
     for val in weapon.values:
         weapon_x.append(val[0])
         weapon_y.append(val[1])
-        shot_ms.append(ms_passed)
-        ms_passed+=weapon.ms_per_shot
+
+        # offset the recoil compensation of the first shot so the pull down finishes just a bit before the next one starts
+        if ms_passed == 0:
+            shot_ms.append(ms_passed)
+            ms_passed+=weapon.ms_per_shot - 13
+        else:
+            shot_ms.append(ms_passed)
+            ms_passed+=weapon.ms_per_shot
 
 
     total_ms = int(weapon.shots * weapon.ms_per_shot)
@@ -84,5 +90,4 @@ for weapon in weapons:
 
 full_weapon_data = "{\n"+"\n,".join(vectors) + "\n}"
 ms_per_shots = "{\n"+"\n,".join(ms_per_shots) + "\n}"
-
 wait = 1
