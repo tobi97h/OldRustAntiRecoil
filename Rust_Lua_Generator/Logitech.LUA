@@ -11,12 +11,12 @@ legit = true
 activated = true
 
 -- from the menu fov settings
-fov_base = 90
+fov_base = 70
 --get and set sens using the CONSOLE!
 sens = 0.1556
 
 -- reverse engineered value for arkan plugin (this will give you violations around 80%, but not above 90% in most of the cases)
-legit_percentage = 3
+legit_percentage = 20
 
 -- key, zoom_factor, crouch reduce recoil
 weapon_options = {
@@ -77,21 +77,7 @@ function GetAdjusts()
 	y_adjust = 1
 
 	if (legit) then
-		
-		x_negative = math.random(0, 1)
-		y_negative = math.random(0, 1)
-
-		if (x_negative == 1) then
-			x_adjust = (100 - legit_percentage) / 100
-		else
-			x_adjust = (100 + legit_percentage) / 100
-		end
-
-		if (y_negative == 1) then
-			y_adjust = (100 - legit_percentage) / 100
-		else
-			y_adjust = (100 - legit_percentage) / 100
-		end
+		y_adjust = (100 - legit_percentage) / 100
 	end
 
 	if (contains_value(attachments, "silencer") or contains_value(attachments, "8x")) then
@@ -129,7 +115,6 @@ function FullAutoRecoil(start_ms, option)
 
     		-- how much we should move raw
 			now_move_y = position[2] - last_position[2]
-
 
 			-- calculate pixel to move
 			move_y_px = (now_move_y / factor) * y_adjust
@@ -199,12 +184,7 @@ function OnEvent(event, arg)
 
     if (event == "MOUSE_BUTTON_PRESSED" and arg == 3) then
         activated = not activated
-        if (activated) then
-        	OutputLogMessage("Script activated: %s\n", weapon_options[selected_weapon][1])
-        	print_info()
-        else
-        	OutputLogMessage("Script deactivated\n")
-        end        
+		print_info()       
     end
 
 	-- change attachments
@@ -232,6 +212,13 @@ end
 
 function print_info() 
 	OutputLogMessage("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+
+	if (activated) then
+		OutputLogMessage("Script activated: %s\n", weapon_options[selected_weapon][1])
+	else
+		OutputLogMessage("Script deactivated\n")
+	end
+
 	mode = "unreal"
 	if(legit) then
 		mode = "legit"
