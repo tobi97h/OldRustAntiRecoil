@@ -21,11 +21,6 @@ def calc(weapon):
         weapon_x.append(val[0])
         weapon_y.append(val[1])
 
-        # offset the recoil compensation of the first shot so the pull down finishes just a bit before the next one starts
-        #if ms_passed == 0:
-        #    shot_ms.append(ms_passed)
-        #    ms_passed+=weapon.ms_per_shot - 15
-        #else:
         shot_ms.append(ms_passed)
         ms_passed+=weapon.ms_per_shot
 
