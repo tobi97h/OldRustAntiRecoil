@@ -62,20 +62,8 @@ sens = 0.1556
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
 legit_percentage = 20
 
--- offset for applying recoil compensation, this can vary depending on your system, but its around 10+ ms generally
+-- millisecond offset for applying recoil compensation, this can vary depending on your system, but its around 10+ ms generally
 MS_ADJUST = 15
-
--- NOT YET IMPLEMENTED
--- RGB lighting (if your hardware supports it)
--- goto a page like this https://htmlcolorcodes.com/color-picker/ to get the r, g, and b values for the colors you like
--- and then enter them into the curly braces below, separated by a "," for example : RGB_AK = {74, 38, 30}
-RGB_SCRIPT_DEACTIVATED = {}
-RGB_AK = {}
-RGB_MP5 = {}
-RGB_SMG = {}
-RGB_THOMPSON = {}
-RGB_LR = {}
-RGB_M2 = {}
 
 -- PROGRAM PART - do not change anything here unless you know what you are doing
 legit = true
@@ -102,7 +90,7 @@ attachment_options = { "holo", "silencer", "8x", }
 -- this will get automatically filled and cleared
 selected_attachments = {}
 
-available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal"}
+available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", }
 
 function ActivateDeactivate()
 	activated = not activated
