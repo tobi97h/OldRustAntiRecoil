@@ -27,29 +27,35 @@
 MB3 = "thompson"
 MB3_SHIFT = "thompson, holo"
 MB3_ALT = "smg"
+MB3_CTRL = nil
 
 -- side mouse buttons
-MB4 = "mp5"
+MB4 = "mp5, holo"
 MB4_SHIFT = "mp5, holo"
 MB4_ALT = "mp5, holo, silencer"
+MB4_CTRL = nil
 
-MB5 = "ak"
-MB5_SHIFT = "ak, holo"
+MB5 = "ak, holo"
+MB5_SHIFT = "ak"
 MB5_ALT = "ak, holo, silencer"
+MB5_CTRL = nil
 
 -- mostly dpi shift button
-MB6 = "activate"
-MB6_SHIFT = "deactivate"
+MB6 = "deactivate"
+MB6_SHIFT = "activate"
 MB6_ALT = "legit_unreal"
+MB6_CTRL = nil
 
 -- upper side buttons
 MB7 = "lr"
 MB7_SHIFT = "lr, holo"
 MB7_ALT = "lr, 8x"
+MB7_CTRL = nil
 
 MB8 = "m2"
 MB8_SHIFT = "m2, 8x"
 MB8_ALT = "m2, holo"
+MB8_CTRL = nil
 
 -- set to true in order to find out what buttons on your mouse are what numbers
 show_pressed_mouse_button = false
@@ -62,8 +68,20 @@ sens = 0.1556
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
 legit_percentage = 20
 
--- millisecond offset for applying recoil compensation, this can vary depending on your system, but its around 10+ ms generally
+-- offset for applying recoil compensation, this can vary depending on your system, but its around 10+ ms generally
 MS_ADJUST = 15
+
+-- NOT YET IMPLEMENTED
+-- RGB lighting (if your hardware supports it)
+-- goto a page like this https://htmlcolorcodes.com/color-picker/ to get the r, g, and b values for the colors you like
+-- and then enter them into the curly braces below, separated by a "," for example : RGB_AK = {74, 38, 30}
+RGB_SCRIPT_DEACTIVATED = {}
+RGB_AK = {}
+RGB_MP5 = {}
+RGB_SMG = {}
+RGB_THOMPSON = {}
+RGB_LR = {}
+RGB_M2 = {}
 
 -- PROGRAM PART - do not change anything here unless you know what you are doing
 legit = true
@@ -90,7 +108,28 @@ attachment_options = { "holo", "silencer", "8x", }
 -- this will get automatically filled and cleared
 selected_attachments = {}
 
-available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", }
+available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment"}
+
+function ExecFunction(func_key)
+	--OutputLogMessage("Executing Function: %s\n", func_key)
+	if func_key == "activate_deactivate" then
+		ActivateDeactivate()
+	elseif func_key == "activate" then
+		Activate()
+	elseif func_key == "deactivate" then
+		Deactivate()
+	elseif func_key == "legit_unreal" then
+		LegitUnreal()
+	elseif func_key == "legit" then
+		Legit()
+	elseif func_key == "unreal" then
+		Unreal()
+	elseif func_key == "next_weapon" then
+		NextWeapon()
+	elseif func_key == "next_attachment" then
+		NextAttachment()
+	end
+end
 
 function ActivateDeactivate()
 	activated = not activated
@@ -130,22 +169,7 @@ function Unreal()
 	OutputLogMessage("Unreal Mode\n")
 end
 
-function ExecFunction(func_key)
-	--OutputLogMessage("Executing Function: %s\n", func_key)
-	if func_key == "activate_deactivate" then
-		ActivateDeactivate()
-	elseif func_key == "activate" then
-		Activate()
-	elseif func_key == "deactivate" then
-		Deactivate()
-	elseif func_key == "legit_unreal" then
-		LegitUnreal()
-	elseif func_key == "legit" then
-		Legit()
-	elseif func_key == "unreal" then
-		Unreal()
-	end
-end
+
 
 function GetFactor(zoom_factor_bare)
 	zoom_factor = 1 / zoom_factor_bare
@@ -154,7 +178,6 @@ function GetFactor(zoom_factor_bare)
 
 	attachments = attachment_options[selected_attachment]
 
-	-- no attachemnts means default weapon zoom factor needs to be applied
 	if (#selected_attachments == 0) then
 		fov = fov * zoom_factor
 	end
@@ -298,10 +321,7 @@ function ExecuteBind(bindValue)
 		return
 	end
 
-	-- clear selected_attachments	
-	for k in pairs(selected_attachments) do
-    	selected_attachments[k] = nil
-	end
+	attachments_cleared = false
 
 	local split = {}
 	for i in bindValue:gmatch("([^, ]+)") do
@@ -313,6 +333,13 @@ function ExecuteBind(bindValue)
 		if SetContains(recoil_graphs_auto, v) then
 			ExecWeaponBind(v)
 		elseif ListContains(attachment_options, v) then
+			if not attachments_cleared then
+					-- clear selected_attachments	
+					for k in pairs(selected_attachments) do
+						selected_attachments[k] = nil
+					end
+					attachments_cleared = true
+			end
 			ExecAttachmentBind(v)
 		elseif ListContains(available_function_keys, v) then
 			ExecFunction(v)
@@ -340,6 +367,7 @@ end
 function BindMapping(event, arg)
 	alt_down = IsModifierPressed("alt")
     shift_down = IsModifierPressed("shift")
+    ctrl_down = IsModifierPressed("ctrl")
 
     --OutputLogMessage("alt_down: %s, shift_down: %s, arg: %d\n", tostring(alt_down), tostring(shift_down), arg)
 
@@ -348,6 +376,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB3_ALT)
 		elseif shift_down then
 			ExecuteBind(MB3_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB3_CTRL)
 		else
 			ExecuteBind(MB3)
 		end
@@ -359,6 +389,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB4_ALT)
 		elseif shift_down then
 			ExecuteBind(MB4_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB4_CTRL)
 		else
 			ExecuteBind(MB4)
 		end
@@ -369,6 +401,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB5_ALT)
 		elseif shift_down then
 			ExecuteBind(MB5_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB5_CTRL)
 		else
 			ExecuteBind(MB5)
 		end
@@ -379,6 +413,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB6_ALT)
 		elseif shift_down then
 			ExecuteBind(MB6_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB6_CTRL)
 		else
 			ExecuteBind(MB6)
 		end
@@ -389,6 +425,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB7_ALT)
 		elseif shift_down then
 			ExecuteBind(MB7_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB7_CTRL)
 		else
 			ExecuteBind(MB7)
 		end
@@ -399,6 +437,8 @@ function BindMapping(event, arg)
 			ExecuteBind(MB8_ALT)
 		elseif shift_down then
 			ExecuteBind(MB8_SHIFT)
+		elseif ctrl_down then
+			ExecuteBind(MB8_CTRL)
 		else
 			ExecuteBind(MB8)
 		end
