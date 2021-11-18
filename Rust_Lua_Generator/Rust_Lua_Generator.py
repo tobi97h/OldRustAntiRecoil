@@ -8,28 +8,47 @@ fov = 90 - 67.5
 px_factor = 1 / (0.03 * (sens * 3) * (fov / 100))
 
 def calc(weapon):
-    
-    weapon.values.insert(0, [0, 0])
-
-    weapon_x = []
-    weapon_y = []
-    shot_ms = []
-
+   
+    weapon_x = [0]
+    weapon_y = [0]
+    shot_ms = [0]
+    last_value= [0,0]
    
     ms_passed = 0
     for val in weapon.values:
-        weapon_x.append(val[0])
-        weapon_y.append(val[1])
 
-        shot_ms.append(ms_passed)
-        ms_passed+=weapon.ms_per_shot
+        delta_x = val[0] - last_value[0]
+        delta_y = val[1] - last_value[1]
+        animation_time = math.sqrt((delta_x * delta_x) + (delta_y * delta_y)) / 0.02
+
+        if animation_time > weapon.ms_per_shot:
+            # animation time cannot be larget than weapon per shot
+            weapon_x.append(val[0])
+            weapon_y.append(val[1])
+            ms_passed+=weapon.ms_per_shot
+            shot_ms.append(ms_passed)
+        else:
+            # move all during animation time
+            weapon_x.append(val[0])
+            weapon_y.append(val[1])
+
+            ms_passed+=animation_time
+            shot_ms.append(ms_passed)
+
+            # only change time on next datapoint
+            weapon_x.append(val[0])
+            weapon_y.append(val[1])
+            ms_passed+=(weapon.ms_per_shot - animation_time)
+            shot_ms.append(ms_passed)
+   
+        last_value = val
 
 
-    total_ms = int(weapon.shots * weapon.ms_per_shot)
+    total_ms = math.floor(ms_passed)
     full_range = np.array(range(0, total_ms))
 
-    fun_y = make_interp_spline(shot_ms, weapon_y, k=3)
-    fun_x = make_interp_spline(shot_ms, weapon_x, k=3)
+    fun_y = make_interp_spline(shot_ms, weapon_y, k=1)
+    fun_x = make_interp_spline(shot_ms, weapon_x, k=1)
 
     plt.plot(shot_ms, weapon_y, 'ro')
     plt.plot(full_range, fun_y(full_range))
