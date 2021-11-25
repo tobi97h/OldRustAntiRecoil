@@ -169,8 +169,6 @@ function Unreal()
 	OutputLogMessage("Unreal Mode\n")
 end
 
-
-
 function GetFactor(zoom_factor_bare)
 	zoom_factor = 1 / zoom_factor_bare
 
@@ -298,13 +296,11 @@ function ExecWeaponBind(v)
 	activated = true
 	selected_weapon = GetIndex(weapon_options , v)
 	OutputLogMessage("set activated and the selected weapon %s\n", v)
-	--OutputLogMessage("Selected Weapon: %s\n", weapon_options[selected_weapon][1])
 end
 
 function ExecAttachmentBind(v)
 	table.insert(selected_attachments, v)
 	OutputLogMessage("inserted attachment %s\n", v)
-	--OutputLogMessage("Attachment: %s\n", v)
 end
 
 function GetIndex(values, key) 

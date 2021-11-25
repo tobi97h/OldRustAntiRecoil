@@ -22,7 +22,7 @@ def calc(weapon):
         delta_y = val[1] - last_value[1]
         animation_time = math.sqrt((delta_x * delta_x) + (delta_y * delta_y)) / 0.02
    
-        # only happens late on some bullets
+        # only happens late on some bullets, animation time is hard capped by ms_per_shot
         if animation_time > weapon.ms_per_shot: 
             print(f'animation time larger than ms_per_shot {weapon.name} on shot {len(weapon_x)}')
 
@@ -43,7 +43,7 @@ def calc(weapon):
             weapon_y.append(val[1])
 
             if first:
-                # to catch up to the game we have to speed up the recoil compensation by a few seconds
+                # to catch up to the game we have to speed up the recoil compensation by a few seconds on the first shot, this will offset the entire graph
                 ms_passed+=animation_time - ms_adjust
             else:
                 # only do it on first shot so we offset the graph
@@ -58,7 +58,7 @@ def calc(weapon):
                 ms_passed_next = weapon.ms_per_shot - animation_time
 
             if ms_passed_next < 0:
-                 print(f'ms_passed_next for weapon {weapon.name}  on shot {len(weapon_x)} cannot be smaller than zero, choose a lower ms_adjust time ')
+                 print(f'ms_passed_next for weapon {weapon.name} on shot {len(weapon_x)} cannot be smaller than zero, choose a lower ms_adjust time')
                  return
 
             # only change time on next datapoint
