@@ -3,9 +3,7 @@ from matplotlib import pyplot as plt
 import math
 from scipy.interpolate import make_interp_spline, BSpline
 
-sens = 0.5
-fov = 90 - 67.5
-px_factor = 1 / (0.03 * (sens * 3) * (fov / 100))
+ms_adjust = 5
 
 def calc(weapon):
    
@@ -16,6 +14,7 @@ def calc(weapon):
 
     animation_extra = 0
    
+    first = True
     ms_passed = 0
     for val in weapon.values:
 
@@ -26,24 +25,35 @@ def calc(weapon):
         if animation_time > weapon.ms_per_shot: 
             weapon_x.append(val[0])
             weapon_y.append(val[1])
-            ms_passed+=animation_time
+            ms_passed+=weapon.ms_per_shot
             shot_ms.append(ms_passed)
-
-            animation_extra=animation_time - weapon.ms_per_shot
         else:
             # move all during animation time
             weapon_x.append(val[0])
             weapon_y.append(val[1])
 
-            ms_passed+=animation_time
+            if first:
+                ms_passed+=animation_time - ms_adjust
+            else:
+                ms_passed+=animation_time
             shot_ms.append(ms_passed)
 
-            # only change time on next datapoint
-            weapon_x.append(val[0])
-            weapon_y.append(val[1])
-            ms_passed+=((weapon.ms_per_shot + animation_extra) - animation_time)
-            shot_ms.append(ms_passed)
-            animation_extra = 0
+            ms_passed_next = 0
+            if first:
+                ms_passed_next = weapon.ms_per_shot - animation_time - ms_adjust
+            else:
+                ms_passed_next = weapon.ms_per_shot - animation_time
+
+            if ms_passed_next > 0:
+                # only change time on next datapoint
+                weapon_x.append(val[0])
+                weapon_y.append(val[1])
+                ms_passed+=ms_passed_next
+                shot_ms.append(ms_passed)
+
+        if first:
+            first = False
+        
    
         last_value = val
 
