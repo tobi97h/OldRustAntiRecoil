@@ -23,11 +23,10 @@ def calc(weapon):
         delta_y = val[1] - last_value[1]
         animation_time = math.sqrt((delta_x * delta_x) + (delta_y * delta_y)) / 0.02
    
-        if animation_time > weapon.ms_per_shot:
-            
+        if animation_time > weapon.ms_per_shot: 
             weapon_x.append(val[0])
             weapon_y.append(val[1])
-            ms_passed+=weapon.ms_per_shot
+            ms_passed+=animation_time
             shot_ms.append(ms_passed)
 
             animation_extra=animation_time - weapon.ms_per_shot
@@ -43,7 +42,6 @@ def calc(weapon):
             weapon_x.append(val[0])
             weapon_y.append(val[1])
             ms_passed+=((weapon.ms_per_shot + animation_extra) - animation_time)
-            #ms_passed+=(weapon.ms_per_shot - animation_time)
             shot_ms.append(ms_passed)
             animation_extra = 0
    
