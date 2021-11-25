@@ -31,14 +31,14 @@ MB3_CTRL = "smg, holo"
 
 -- side mouse buttons
 MB4 = "mp5, holo"
-MB4_SHIFT = nil
+MB4_SHIFT = "mp5, none"
 MB4_ALT = "mp5, holo, silencer"
-MB4_CTRL = "mp5, none"
+MB4_CTRL = nil
 
 MB5 = "ak, holo"
-MB5_SHIFT = nil
+MB5_SHIFT ="ak, none"
 MB5_ALT = "ak, holo, silencer"
-MB5_CTRL = "ak, none"
+MB5_CTRL = nil
 
 -- mostly dpi shift button
 MB6 = "deactivate"
@@ -66,7 +66,7 @@ fov_base = 70
 sens = 0.1556
 
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
-legit_percentage = 33
+legit_percentage = 25
 
 -- offset for applying recoil compensation, this can vary depending on your system, but its around 10+ ms generally
 MS_ADJUST = 5
@@ -318,10 +318,10 @@ function GetIndex(values, key)
 end
 
 function ExecuteBind(bindValue)
-	OutputLogMessage("bindValue: %s\n", bindValue)
 	if bindValue == nil then
 		return
 	end
+	OutputLogMessage("bindValue: %s\n", bindValue)
 
 	local split = {}
 	for i in bindValue:gmatch("([^, ]+)") do

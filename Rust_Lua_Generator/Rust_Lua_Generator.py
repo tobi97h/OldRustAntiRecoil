@@ -13,6 +13,8 @@ def calc(weapon):
     weapon_y = [0]
     shot_ms = [0]
     last_value= [0,0]
+
+    animation_extra = 0
    
     ms_passed = 0
     for val in weapon.values:
@@ -20,13 +22,15 @@ def calc(weapon):
         delta_x = val[0] - last_value[0]
         delta_y = val[1] - last_value[1]
         animation_time = math.sqrt((delta_x * delta_x) + (delta_y * delta_y)) / 0.02
-
+   
         if animation_time > weapon.ms_per_shot:
-            # animation time cannot be larget than weapon per shot
+            
             weapon_x.append(val[0])
             weapon_y.append(val[1])
             ms_passed+=weapon.ms_per_shot
             shot_ms.append(ms_passed)
+
+            animation_extra=animation_time - weapon.ms_per_shot
         else:
             # move all during animation time
             weapon_x.append(val[0])
@@ -38,8 +42,10 @@ def calc(weapon):
             # only change time on next datapoint
             weapon_x.append(val[0])
             weapon_y.append(val[1])
-            ms_passed+=(weapon.ms_per_shot - animation_time)
+            ms_passed+=((weapon.ms_per_shot + animation_extra) - animation_time)
+            #ms_passed+=(weapon.ms_per_shot - animation_time)
             shot_ms.append(ms_passed)
+            animation_extra = 0
    
         last_value = val
 
