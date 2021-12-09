@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 import math
 from scipy.interpolate import make_interp_spline, BSpline
 
-ms_adjust = 4
+ms_adjust = 1
 
 def calc(weapon):
    
@@ -14,7 +14,6 @@ def calc(weapon):
 
     animation_extra = 0
    
-    first = True
     ms_passed = 0
     for val in weapon.values:
 
@@ -29,12 +28,7 @@ def calc(weapon):
             weapon_x.append(val[0])
             weapon_y.append(val[1])
 
-            if first:
-                # to catch up to the game we have to speed up the recoil compensation by a few seconds
-                ms_passed+=weapon.ms_per_shot - ms_adjust
-            else:
-                # only do it on first shot so we offset the graph
-                ms_passed+=weapon.ms_per_shot
+            ms_passed+=weapon.ms_per_shot
 
             shot_ms.append(ms_passed)
         else:
@@ -42,20 +36,13 @@ def calc(weapon):
             weapon_x.append(val[0])
             weapon_y.append(val[1])
 
-            if first:
-                # to catch up to the game we have to speed up the recoil compensation by a few seconds on the first shot, this will offset the entire graph
-                ms_passed+=animation_time - ms_adjust
-            else:
-                # only do it on first shot so we offset the graph
-                ms_passed+=animation_time
+            ms_passed+=animation_time
 
             shot_ms.append(ms_passed)
 
             ms_passed_next = 0
-            if first:
-                ms_passed_next = weapon.ms_per_shot - animation_time - ms_adjust
-            else:
-                ms_passed_next = weapon.ms_per_shot - animation_time
+
+            ms_passed_next = weapon.ms_per_shot - animation_time
 
             if ms_passed_next < 0:
                  print(f'ms_passed_next for weapon {weapon.name} on shot {len(weapon_x)} cannot be smaller than zero, choose a lower ms_adjust time')
@@ -66,14 +53,9 @@ def calc(weapon):
             weapon_y.append(val[1])
             ms_passed+=ms_passed_next
             shot_ms.append(ms_passed)
-
-        # we completed the first iteration
-        if first:
-            first = False
-        
+       
    
         last_value = val
-
 
     total_ms = math.floor(ms_passed)
     full_range = np.array(range(0, total_ms))
