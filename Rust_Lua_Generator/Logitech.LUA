@@ -1,4 +1,7 @@
-	-- CONFIG PART, all fields below can be adjusted to your liking. If you dont understand a setting ask on the discord.
+-- CONFIG PART, all fields below can be adjusted to your liking. If you dont understand a setting ask on the discord.
+
+-- Working ADS bind => dont use the ads setting ingame leave it to 1.0, use ingame console instead `Bind mouse1 "+attack2;+input.sensitivity 0.2723;input.sensitivity 0.1556"`
+-- startup options `-cpuCount=7 -exThreads=7 -high -gc.buffer 4096 -maxMem=13000`, set them one lower than the cpu and thread count visible in the task manager
 
 -- Settable Options:
 -- Weapons "ak, mp5, smg, thompson, lr, m2"
@@ -12,6 +15,10 @@
 -- "legit" : set script into legit mode
 -- "unreal" : set script into detectable unreal mode
 
+-- COMING SOON:
+-- "silencer_on" : add silencer
+-- "silencer_off" : remove silencer
+
 -- HOW TO SET:
 -- simply replace nil with whatever you want in quotation marks (you cant mix options and functions, you can only mix weapons and attachments)
 
@@ -21,7 +28,6 @@
 
 -- FUNCTION EXAMPLE
 -- MB3 = "activate_deactivate"
-
 
 --[[
 -- middle mouse button
@@ -60,6 +66,10 @@ MB8_CTRL = "m2, holo"
 -- set to true in order to find out what buttons on your mouse are what numbers
 show_pressed_mouse_button = false
 
+-- if set to true this will use more cpu but provide better recoil control
+-- if you notice fps drops while spraying you should set this to false
+use_atomic_sleep = true
+
 -- from the menu fov settings CONSOLE (F1 => graphics.fov)!
 fov_base = 70
 --get and set sens using the CONSOLE (F1 => input.sensitivity)!
@@ -68,20 +78,8 @@ sens = 0.1556
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
 legit_percentage = 20
 
--- NOT YET IMPLEMENTED
--- RGB lighting (if your hardware supports it)
--- goto a page like this https://htmlcolorcodes.com/color-picker/ to get the r, g, and b values for the colors you like
--- and then enter them into the curly braces below, separated by a "," for example : RGB_AK = {74, 38, 30}
-RGB_SCRIPT_DEACTIVATED = {}
-RGB_AK = {}
-RGB_MP5 = {}
-RGB_SMG = {}
-RGB_THOMPSON = {}
-RGB_LR = {}
-RGB_M2 = {}
-
 -- PROGRAM PART - do not change anything here unless you know what you are doing
-legit = true
+legit = false
 activated = true
 
 -- key, zoom_factor, crouch reduce recoil
@@ -108,8 +106,6 @@ attachment_options = { "holo", "silencer", "8x", "none" }
 selected_attachments = { "holo" }
 
 available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment"}
-
-debug = false
 
 function ExecFunction(func_key)
 	--OutputLogMessage("Executing Function: %s\n", func_key)
@@ -171,11 +167,9 @@ function Unreal()
 end
 
 function GetFactor(zoom_factor_bare)
-	zoom_factor = 1 / zoom_factor_bare
+	local zoom_factor = 1 / zoom_factor_bare
 
-	fov = fov_base
-
-	attachments = attachment_options[selected_attachment]
+	local fov = fov_base
 
 	if (#selected_attachments == 0 or ListContains(selected_attachments, "none")) then
 		fov = fov * zoom_factor
@@ -189,23 +183,15 @@ function GetFactor(zoom_factor_bare)
 		fov = fov * eightex
 	end
 
-	factor = (fov / 666.6666666666666666) * sens 
-
-	return factor
+	return (fov / 666.6666666666666666) * sens 
 end 
 
-
 function GetAdjusts()
-
-	attachments = attachment_options[selected_attachment]
-
-	x_adjust = 1
-	y_adjust = 1
+	local x_adjust = 1
+	local y_adjust = 1
 
 	if (legit) then
-		
-		x_negative = math.random(0, 1)
-		y_negative = math.random(0, 1)
+		local y_negative = math.random(0, 1)
 
 		if (y_negative == 1) then
 			y_adjust = (100 - legit_percentage) / 100
@@ -229,45 +215,43 @@ function AtomicSleep(millis)
 end
 
 function FullAutoRecoil(start_ms, option)
-
 	-- needed for calcing the diff to move
-	last_position = {0, 0}
+	local last_position = {0, 0}
 
-	recoil_graph = recoil_graphs_auto[option[1]]
+	local recoil_graph = recoil_graphs_auto[option[1]]
 
-	x_adjust, y_adjust = GetAdjusts(option[2])
+	local x_adjust, y_adjust = GetAdjusts(option[2])
 	
 	-- pixel pool, the amount of non full pixels that are left over after using closest_int
-	x_px_pool = 0
-	y_px_pool = 0
+	local x_px_pool = 0
+	local y_px_pool = 0
 	repeat
     	-- values work based on a recoil graph that contains the recoil 
     	-- for each millisecond	
+		local passed_ms = GetRunningTime() - start_ms
 
-		passed_ms = GetRunningTime() - start_ms
-
-		position = recoil_graph[passed_ms]
+		local position = recoil_graph[passed_ms]
 		if(position ~= nil and IsMouseButtonPressed(3)) then
 			
-			crouched = IsModifierPressed("ctrl") and option[3]
+			local crouched = IsModifierPressed("ctrl") and option[3]
 
     		-- how much we should move raw
-			now_move_y = position[2] - last_position[2]
+			local now_move_y = position[2] - last_position[2]
 
 			-- calculate pixel to move
-			move_y_px = (now_move_y / factor) * y_adjust
+			local move_y_px = (now_move_y / factor) * y_adjust
 
 			if crouched then
 				move_y_px = move_y_px / 2
 			end
 
-			y_px_leftovers = y_px_pool
+			local y_px_leftovers = y_px_pool
 
 			-- add left over pixel from previous iteration
-			move_y_px_w_leftovers = move_y_px + y_px_leftovers
+			local move_y_px_w_leftovers = move_y_px + y_px_leftovers
 	    		
 			-- floor it 
-			move_y_px_floored = closest_int(move_y_px_w_leftovers)
+			local move_y_px_floored = closest_int(move_y_px_w_leftovers)
 
 			-- get left over pixel once again
 			y_px_pool = move_y_px_w_leftovers - move_y_px_floored
@@ -276,19 +260,19 @@ function FullAutoRecoil(start_ms, option)
 			last_position[2] = position[2]
 
 			-- same for x
-			now_move_x = position[1] - last_position[1]
+			local now_move_x = position[1] - last_position[1]
 
-			move_x_px = (now_move_x / factor) * x_adjust
+			local move_x_px = (now_move_x / factor) * x_adjust
 
 			if crouched then
 				move_x_px = move_x_px / 2
 			end
 
-			x_px_leftovers = x_px_pool
+			local x_px_leftovers = x_px_pool
 
-			move_x_px_w_leftovers = move_x_px + x_px_leftovers
+			local move_x_px_w_leftovers = move_x_px + x_px_leftovers
 
-			move_x_px_floored = closest_int(move_x_px_w_leftovers)
+			local move_x_px_floored = closest_int(move_x_px_w_leftovers)
 
 			x_px_pool = move_x_px_w_leftovers - move_x_px_floored
 
@@ -297,14 +281,16 @@ function FullAutoRecoil(start_ms, option)
 			-- adjust recoil
 			MoveMouseRelative(-move_x_px_floored, -move_y_px_floored)
 
-			if debug then
-				OutputLogMessage("passed_ms: %f\nMoveMouseRelative(%f, %f)\nfactor: %f\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor)
-				OutputLogMessage("now_move_y: %f\nmove_y_px: %f\nmove_y_px_w_leftovers: %f\nmove_y_px_floored: %f\ny_px_leftovers: %f\ny_px_pool: %f\n\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor, now_move_y, move_y_px, move_y_px_w_leftovers, move_y_px_floored, y_px_leftovers, y_px_pool)
-				OutputLogMessage("now_move_x: %f\nmove_x_px: %f\nmove_x_px_w_leftovers: %f\nmove_x_px_floored: %f\nx_px_leftovers: %f\nx_px_pool: %f\n\n", now_move_x, move_x_px, move_x_px_w_leftovers, move_x_px_floored, x_px_leftovers, x_px_pool)
-			end
-
+			--OutputLogMessage("passed_ms: %f\nMoveMouseRelative(%f, %f)\nfactor: %f\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor)
+			--OutputLogMessage("now_move_y: %f\nmove_y_px: %f\nmove_y_px_w_leftovers: %f\nmove_y_px_floored: %f\ny_px_leftovers: %f\ny_px_pool: %f\n\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor, now_move_y, move_y_px, move_y_px_w_leftovers, move_y_px_floored, y_px_leftovers, y_px_pool)
+			--OutputLogMessage("now_move_x: %f\nmove_x_px: %f\nmove_x_px_w_leftovers: %f\nmove_x_px_floored: %f\nx_px_leftovers: %f\nx_px_pool: %f\n\n", now_move_x, move_x_px, move_x_px_w_leftovers, move_x_px_floored, x_px_leftovers, x_px_pool)
 		end
-		AtomicSleep(1)
+
+		if use_atomic_sleep then
+			AtomicSleep(1)
+		else
+			Sleep(1)
+		end
 	until not IsMouseButtonPressed(1)
 end
 
@@ -339,7 +325,7 @@ function ExecuteBind(bindValue)
 		split[#split + 1] = i
 	end
 
-	attachments_not_cleared = true
+	local attachments_not_cleared = true
 
 	for i, v in ipairs(split) do
 		if SetContains(recoil_graphs_auto, v) then
@@ -377,10 +363,8 @@ function SetContains(set, key)
 end
 
 function BindMapping(event, arg)
-	alt_down = IsModifierPressed("alt")
-    ctrl_down = IsModifierPressed("ctrl")
-
-    --OutputLogMessage("alt_down: %s, ctrl_down: %s, arg: %d\n", tostring(alt_down), tostring(ctrl_down), arg)
+	local alt_down = IsModifierPressed("alt")
+    local ctrl_down = IsModifierPressed("ctrl")
 
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 3) then
 		if alt_down then
@@ -391,7 +375,6 @@ function BindMapping(event, arg)
 			ExecuteBind(MB3)
 		end
 	end
-
 
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 4) then
 		if alt_down then
@@ -442,20 +425,16 @@ function BindMapping(event, arg)
 			ExecuteBind(MB8)
 		end
 	end
-
 end
 
 function OnEvent(event, arg)
+	local start_ms = GetRunningTime()
 
-	start_ms = GetRunningTime()
-
-	weapon_option = weapon_options[selected_weapon]
+	local weapon_option = weapon_options[selected_weapon]
 
 	-- fire script on main mouse button
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 1 and activated) then
-
 		FullAutoRecoil(start_ms, weapon_option)
-
     elseif (event == "PROFILE_ACTIVATED") then
     	-- enable trigger onevent when mb1 is pressed
         EnablePrimaryMouseButtonEvents(true)
@@ -484,9 +463,7 @@ function print_info()
 	for index, attachment in ipairs(selected_attachments) do
 		OutputLogMessage("-%s\n", attachment)
 	end
-	
 end
-
 
 function closest_int(val)
 	if val > 0 then

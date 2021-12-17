@@ -3,16 +3,12 @@ from matplotlib import pyplot as plt
 import math
 from scipy.interpolate import make_interp_spline, BSpline
 
-ms_adjust = 1
-
 def calc(weapon):
    
     weapon_x = [0]
     weapon_y = [0]
     shot_ms = [0]
     last_value= [0,0]
-
-    animation_extra = 0
    
     ms_passed = 0
     for val in weapon.values:
@@ -43,10 +39,6 @@ def calc(weapon):
             ms_passed_next = 0
 
             ms_passed_next = weapon.ms_per_shot - animation_time
-
-            if ms_passed_next < 0:
-                 print(f'ms_passed_next for weapon {weapon.name} on shot {len(weapon_x)} cannot be smaller than zero, choose a lower ms_adjust time')
-                 return
 
             # only change time on next datapoint
             weapon_x.append(val[0])
