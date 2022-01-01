@@ -36,30 +36,30 @@ MB3_ALT = "smg, holo"
 MB3_CTRL = "smg, none"
 ]]
 
-MB3 = "thompson, none"
-MB3_ALT = "thompson, holo"
+MB3 = nil
+MB3_ALT = "thompson, none"
 MB3_CTRL = "smg, none"
 
 -- side mouse buttons
 MB4 = "mp5, holo"
-MB4_ALT = "mp5, holo, silencer"
-MB4_CTRL = "mp5, none"
+MB4_ALT = "mp5, none"
+MB4_CTRL = "smg, holo"
 
 MB5 = "ak, holo"
-MB5_ALT = "ak, holo, silencer"
-MB5_CTRL = "ak, none"
+MB5_ALT = "ak, none"
+MB5_CTRL = "thompson, holo"
 
 -- mostly dpi shift button
 MB6 = "deactivate"
-MB6_ALT = "legit_unreal"
-MB6_CTRL = "activate"
+MB6_ALT = "silencer_on"
+MB6_CTRL = "silcencer_off"
 
 -- upper side buttons
-MB7 = "lr, holo"
+MB7 = "lr, none"
 MB7_ALT = "lr, 8x"
-MB7_CTRL = "smg, holo"
+MB7_CTRL = "lr, holo"
 
-MB8 = "m2"
+MB8 = "m2, none"
 MB8_ALT = "m2, 8x"
 MB8_CTRL = "m2, holo"
 
@@ -76,7 +76,7 @@ fov_base = 70
 sens = 0.1556
 
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
-legit_percentage = 20
+legit_percentage = 30
 
 -- PROGRAM PART - do not change anything here unless you know what you are doing
 legit = false
@@ -105,7 +105,7 @@ attachment_options = { "holo", "silencer", "8x", "none" }
 -- this will get automatically filled and cleared
 selected_attachments = { "holo" }
 
-available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment"}
+available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment", "silencer_off", "silencer_on"}
 
 function ExecFunction(func_key)
 	--OutputLogMessage("Executing Function: %s\n", func_key)
@@ -125,7 +125,23 @@ function ExecFunction(func_key)
 		NextWeapon()
 	elseif func_key == "next_attachment" then
 		NextAttachment()
+	elseif func_key == "silencer_on" then
+		SilencerOn()
+	elseif func_key == "silencer_off" then
+		SilencerOff()
 	end
+end
+
+function SilencerOn()
+	OutputLogMessage("Silencer on\n")
+	if not ListContains(selected_attachments, "silencer") then
+		table.insert(selected_attachments, "silencer")
+	end
+end
+
+function SilencerOff()
+	OutputLogMessage("Silencer off\n")
+	ListRemove(selected_attachments, "silencer")
 end
 
 function ActivateDeactivate()
@@ -287,7 +303,7 @@ function FullAutoRecoil(start_ms, option)
 		end
 
 		if use_atomic_sleep then
-			AtomicSleep(1)
+			AtomicSleep(math.random(1,3))
 		else
 			Sleep(1)
 		end
@@ -332,7 +348,7 @@ function ExecuteBind(bindValue)
 			ExecWeaponBind(v)
 		elseif ListContains(attachment_options, v) then
 			if attachments_not_cleared then
-				OutputLogMessage("cleared attachments\n")
+				--OutputLogMessage("cleared attachments\n")
 				for k in pairs(selected_attachments) do
 			    	selected_attachments[k] = nil
 				end
@@ -347,6 +363,13 @@ function ExecuteBind(bindValue)
 	print_info()
 end
 
+function ListRemove(tab, val)
+	for index, value in ipairs(tab) do
+        if value == val then
+            table.remove(tab, index)
+        end
+    end
+end
 
 function ListContains (tab, val)
     for index, value in ipairs(tab) do
