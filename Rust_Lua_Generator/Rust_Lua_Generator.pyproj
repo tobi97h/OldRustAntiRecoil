@@ -25,7 +25,7 @@
     <Compile Include="Rust_Lua_Generator.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Logitech.LUA" />
+    <Content Include="Logitech_25-01-22.LUA" />
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
