@@ -42,14 +42,14 @@ MB3 = nil
 MB3_ALT = "thompson, ironsight"
 MB3_CTRL = "smg, ironsight"
 
+MB5 = "hipfire"
+MB5_ALT = "hipfire"
+MB5_CTRL = "hipfire"
+
 -- side mouse buttons
 MB4 = "mp5, holo"
 MB4_ALT = "ak, holo"
-MB4_CTRL = "thompson, holo"
-
-MB5 = "hipfire"
-MB5_ALT = nil
-MB5_CTRL = nil
+MB4_CTRL = "holo_off"
 
 -- mostly dpi shift button
 MB6 = "deactivate"
@@ -57,14 +57,14 @@ MB6 = "deactivate"
 MB6_ALT = "legit_unreal"
 MB6_CTRL = "silencer_on"
 
--- upper side buttons
-MB7 = "ak, ironsight"
-MB7_ALT = "lr, 8x"
-MB7_CTRL = "lr, holo"
+MB7 = "smg, holo"
+MB7_ALT = "m2, 8x"
+MB7_CTRL = "m2, holo"
 
-MB8 = "mp5, ironsight"
-MB8_ALT = "m2, 8x"
-MB8_CTRL = "m2, holo"
+-- upper side buttons
+MB8 = "thompson, holo"
+MB8_ALT = "lr, 8x"
+MB8_CTRL = "lr, holo"
 
 -- set to true in order to find out what buttons on your mouse are what numbers
 show_pressed_mouse_button = false
@@ -79,10 +79,11 @@ fov_base = 70
 sens = 0.1556
 
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
-legit_percentage = 30
+legit_percentage_horizontal = 5
+legit_percentage_vertical = 20
 
 -- PROGRAM PART - do not change anything here unless you know what you are doing
-legit = true
+legit = false
 activated = true
 
 -- key, zoom_factor, crouch reduce recoil
@@ -106,7 +107,7 @@ attachment_options = { "holo", "silencer", "8x", "ironsight" }
 -- this will get automatically filled and cleared
 selected_attachments = { "holo" }
 
-available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment", "silencer_off", "silencer_on", "hipfire"}
+available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment", "silencer_off", "silencer_on", "hipfire", "holo_off"}
 
 function ExecFunction(func_key, arg)
 	OutputLogMessage("Executing Function: %s\n", func_key)
@@ -132,6 +133,8 @@ function ExecFunction(func_key, arg)
 		SilencerOn()
 	elseif func_key == "silencer_off" then
 		SilencerOff()
+	elseif func_key == "holo_off" then
+		HoloOff()
 	end
 end
 
@@ -145,7 +148,14 @@ function Hipfire()
 	FullAutoRecoil(start_ms, weapon_option, true)
 
 	ReleaseMouseButton(1)
-	
+end
+
+function HoloOff()
+	OutputLogMessage("Holo off\n")
+	ListRemove(selected_attachments, "holo")
+	if not ListContains(selected_attachments, "ironsight") then
+		table.insert(selected_attachments, "ironsight")
+	end
 end
 
 function SilencerOn()
@@ -227,13 +237,11 @@ function GetAdjusts()
 	local y_adjust = 1
 
 	if (legit) then
-		local y_negative = math.random(0, 1)
 
-		if (y_negative == 1) then
-			y_adjust = (100 - legit_percentage) / 100
-		else
-			y_adjust = (100 - legit_percentage) / 100
-		end
+		y_adjust = (100 - legit_percentage_vertical) / 100
+
+		x_adjust = (100 - legit_percentage_horizontal) / 100
+	
 	end
 
 	if (ListContains(selected_attachments, "silencer") or ListContains(selected_attachments, "8x")) then
