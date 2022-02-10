@@ -35,34 +35,30 @@ MB3_ALT = "smg, holo"
 MB3_CTRL = "smg, ironsight"
 ]]
 
--- same as hipfire function and not higher than 5, so only 345
-HIPFIRE_BUTTON = 5
-
 MB3 = nil
 MB3_ALT = "thompson, ironsight"
 MB3_CTRL = "smg, ironsight"
 
-MB5 = "hipfire"
-MB5_ALT = "hipfire"
-MB5_CTRL = "hipfire"
-
 -- side mouse buttons
 MB4 = "mp5, holo"
 MB4_ALT = "ak, holo"
-MB4_CTRL = "holo_off"
+MB4_CTRL = "thompson, holo"
+
+MB5 = "hipfire_off"
+MB5_ALT = "holo_off"
+MB5_CTRL = "silencer_on"
 
 -- mostly dpi shift button
-MB6 = "deactivate"
--- it will auto activate on any weapon/attachment change
+MB6 = "hipfire_on"
 MB6_ALT = "legit_unreal"
-MB6_CTRL = "silencer_on"
+MB6_CTRL = "deactivate"
 
 MB7 = "smg, holo"
 MB7_ALT = "m2, 8x"
 MB7_CTRL = "m2, holo"
 
 -- upper side buttons
-MB8 = "thompson, holo"
+MB8 = "lr, ironsight"
 MB8_ALT = "lr, 8x"
 MB8_CTRL = "lr, holo"
 
@@ -77,14 +73,16 @@ use_atomic_sleep = true
 fov_base = 70
 --get and set sens using the CONSOLE (F1 => input.sensitivity)!
 sens = 0.1556
+normal_sens = 0.2723
 
 -- depending on server and hours on profile this should not be set lower than 20. The higher the percentage, the more you have to pull down
-legit_percentage_horizontal = 5
-legit_percentage_vertical = 20
+legit_percentage_horizontal = 10
+legit_percentage_vertical = 25
 
 -- PROGRAM PART - do not change anything here unless you know what you are doing
 legit = false
 activated = true
+hipfire = false
 
 -- key, zoom_factor, crouch reduce recoil
 weapon_options = {
@@ -107,12 +105,14 @@ attachment_options = { "holo", "silencer", "8x", "ironsight" }
 -- this will get automatically filled and cleared
 selected_attachments = { "holo" }
 
-available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment", "silencer_off", "silencer_on", "hipfire", "holo_off"}
+available_function_keys = {"activate_deactivate", "activate", "deactivate", "legit_unreal", "legit", "unreal", "next_weapon", "next_attachment", "silencer_off", "silencer_on", "hipfire_on", "hipfire_off", "holo_off"}
 
 function ExecFunction(func_key, arg)
 	OutputLogMessage("Executing Function: %s\n", func_key)
-	if func_key == "hipfire" then
-		Hipfire()
+	if func_key == "hipfire_on" then
+		HipfireOn()
+	elseif func_key == "hipfire_off" then
+		HipfireOff()
 	elseif func_key == "activate_deactivate" then
 		ActivateDeactivate()
 	elseif func_key == "activate" then
@@ -138,16 +138,12 @@ function ExecFunction(func_key, arg)
 	end
 end
 
-function Hipfire() 
-	PressMouseButton(1)
-	local start_ms = GetRunningTime()
+function HipfireOn()
+	hipfire = true
+end
 
-	local weapon_option = weapon_options[selected_weapon]
-
-	-- fire script on main mouse button
-	FullAutoRecoil(start_ms, weapon_option, true)
-
-	ReleaseMouseButton(1)
+function HipfireOff()
+	hipfire = false
 end
 
 function HoloOff()
@@ -213,9 +209,7 @@ function GetFactor(zoom_factor_bare, hipfire)
 	--OutputLogMessage("zoom_factor: %f\n", zoom_factor)
 	local fov = fov_base
 
-	if hipfire then
-		fov = fov * 1.75
-	else
+	if not hipfire then
 		if (#selected_attachments == 0 or ListContains(selected_attachments, "ironsight")) then
 			fov = fov * zoom_factor
 		end
@@ -229,7 +223,12 @@ function GetFactor(zoom_factor_bare, hipfire)
 		end
 	end
 
-	return (fov / 666.6666666666666666) * sens 
+	if hipfire then
+		return (fov / 666.6666666666666666) * normal_sens
+	else
+		return (fov / 666.6666666666666666) * sens 
+	end
+	
 end 
 
 function GetAdjusts()
@@ -258,7 +257,7 @@ function AtomicSleep(millis)
     end
 end
 
-function FullAutoRecoil(start_ms, option, hipfire)
+function FullAutoRecoil(start_ms, option)
 	--OutputLogMessage("FullAutoRecoil, hipfire: %s\n", tostring(hipfire))
 	-- needed for calcing the diff to move
 	local last_position = {0, 0}
@@ -267,154 +266,88 @@ function FullAutoRecoil(start_ms, option, hipfire)
 
 	local x_adjust, y_adjust = GetAdjusts(option[2])
 
-	local factor = GetFactor(option[2], hipfire)
+	local factor_gun = GetFactor(option[2], false)
+	local factor_hip = GetFactor(option[2], true)
 	
 	-- pixel pool, the amount of non full pixels that are left over after using closest_int
 	local x_px_pool = 0
 	local y_px_pool = 0
 
-	if hipfire then
-		repeat
-    		-- values work based on a recoil graph that contains the recoil 
-    		-- for each millisecond	
-			local passed_ms = GetRunningTime() - start_ms
+	repeat
+    	-- values work based on a recoil graph that contains the recoil 
+    	-- for each millisecond	
+		local passed_ms = GetRunningTime() - start_ms
 
-			--OutputLogMessage("passed_ms: %d\n", passed_ms)
+		--OutputLogMessage("passed_ms: %d\n", passed_ms)
 
-			local position = recoil_graph[passed_ms]
-			if(position ~= nil and (IsMouseButtonPressed(3) or hipfire)) then
-			
-				local crouched = IsModifierPressed("ctrl") and option[3]
+		local position = recoil_graph[passed_ms]
+		if(position ~= nil and (IsMouseButtonPressed(3) or hipfire)) then
+			local factor = 0	
+			if (IsMouseButtonPressed(3)) then
+				factor = factor_gun
+			elseif(hipfire) then
+				factor = factor_hip
+			end
 
-    			-- how much we should move raw
-				local now_move_y = position[2] - last_position[2]
+			local crouched = IsModifierPressed("ctrl") and option[3]
 
-				-- calculate pixel to move
-				local move_y_px = (now_move_y / factor) * y_adjust
+    		-- how much we should move raw
+			local now_move_y = position[2] - last_position[2]
 
-				if crouched then
-					move_y_px = move_y_px / 2
-				end
+			-- calculate pixel to move
+			local move_y_px = (now_move_y / factor) * y_adjust
 
-				local y_px_leftovers = y_px_pool
+			if crouched then
+				move_y_px = move_y_px / 2
+			end
 
-				-- add left over pixel from previous iteration
-				local move_y_px_w_leftovers = move_y_px + y_px_leftovers
+			local y_px_leftovers = y_px_pool
+
+			-- add left over pixel from previous iteration
+			local move_y_px_w_leftovers = move_y_px + y_px_leftovers
 	    		
-				-- floor it 
-				local move_y_px_floored = closest_int(move_y_px_w_leftovers)
+			-- floor it 
+			local move_y_px_floored = closest_int(move_y_px_w_leftovers)
 
-				-- get left over pixel once again
-				y_px_pool = move_y_px_w_leftovers - move_y_px_floored
+			-- get left over pixel once again
+			y_px_pool = move_y_px_w_leftovers - move_y_px_floored
 
-				-- update the total that we moved
-				last_position[2] = position[2]
+			-- update the total that we moved
+			last_position[2] = position[2]
 
-				-- same for x
-				local now_move_x = position[1] - last_position[1]
+			-- same for x
+			local now_move_x = position[1] - last_position[1]
 
-				local move_x_px = (now_move_x / factor) * x_adjust
+			local move_x_px = (now_move_x / factor) * x_adjust
 
-				if crouched then
-					move_x_px = move_x_px / 2
-				end
-
-				local x_px_leftovers = x_px_pool
-
-				local move_x_px_w_leftovers = move_x_px + x_px_leftovers
-
-				local move_x_px_floored = closest_int(move_x_px_w_leftovers)
-
-				x_px_pool = move_x_px_w_leftovers - move_x_px_floored
-
-				last_position[1] = position[1]
-
-				-- adjust recoil
-				MoveMouseRelative(-move_x_px_floored, -move_y_px_floored)
-
-				--OutputLogMessage("passed_ms: %f\nMoveMouseRelative(%f, %f)\nfactor: %f\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor)
-				--OutputLogMessage("now_move_y: %f\nmove_y_px: %f\nmove_y_px_w_leftovers: %f\nmove_y_px_floored: %f\ny_px_leftovers: %f\ny_px_pool: %f\n\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor, now_move_y, move_y_px, move_y_px_w_leftovers, move_y_px_floored, y_px_leftovers, y_px_pool)
-				--OutputLogMessage("now_move_x: %f\nmove_x_px: %f\nmove_x_px_w_leftovers: %f\nmove_x_px_floored: %f\nx_px_leftovers: %f\nx_px_pool: %f\n\n", now_move_x, move_x_px, move_x_px_w_leftovers, move_x_px_floored, x_px_leftovers, x_px_pool)
+			if crouched then
+				move_x_px = move_x_px / 2
 			end
 
-			if use_atomic_sleep then
-				AtomicSleep(math.random(1,3))
-			else
-				Sleep(1)
-			end
-		until not IsMouseButtonPressed(HIPFIRE_BUTTON)--and not IsMouseButtonPressed(1)
-	else
-		repeat
-    		-- values work based on a recoil graph that contains the recoil 
-    		-- for each millisecond	
-			local passed_ms = GetRunningTime() - start_ms
+			local x_px_leftovers = x_px_pool
 
-			--OutputLogMessage("passed_ms: %d\n", passed_ms)
+			local move_x_px_w_leftovers = move_x_px + x_px_leftovers
 
-			local position = recoil_graph[passed_ms]
-			if(position ~= nil and (IsMouseButtonPressed(3) or hipfire)) then
-			
-				local crouched = IsModifierPressed("ctrl") and option[3]
+			local move_x_px_floored = closest_int(move_x_px_w_leftovers)
 
-    			-- how much we should move raw
-				local now_move_y = position[2] - last_position[2]
+			x_px_pool = move_x_px_w_leftovers - move_x_px_floored
 
-				-- calculate pixel to move
-				local move_y_px = (now_move_y / factor) * y_adjust
+			last_position[1] = position[1]
 
-				if crouched then
-					move_y_px = move_y_px / 2
-				end
+			-- adjust recoil
+			MoveMouseRelative(-move_x_px_floored, -move_y_px_floored)
 
-				local y_px_leftovers = y_px_pool
+			--OutputLogMessage("passed_ms: %f\nMoveMouseRelative(%f, %f)\nfactor: %f\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor)
+			--OutputLogMessage("now_move_y: %f\nmove_y_px: %f\nmove_y_px_w_leftovers: %f\nmove_y_px_floored: %f\ny_px_leftovers: %f\ny_px_pool: %f\n\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor, now_move_y, move_y_px, move_y_px_w_leftovers, move_y_px_floored, y_px_leftovers, y_px_pool)
+			--OutputLogMessage("now_move_x: %f\nmove_x_px: %f\nmove_x_px_w_leftovers: %f\nmove_x_px_floored: %f\nx_px_leftovers: %f\nx_px_pool: %f\n\n", now_move_x, move_x_px, move_x_px_w_leftovers, move_x_px_floored, x_px_leftovers, x_px_pool)
+		end
 
-				-- add left over pixel from previous iteration
-				local move_y_px_w_leftovers = move_y_px + y_px_leftovers
-	    		
-				-- floor it 
-				local move_y_px_floored = closest_int(move_y_px_w_leftovers)
-
-				-- get left over pixel once again
-				y_px_pool = move_y_px_w_leftovers - move_y_px_floored
-
-				-- update the total that we moved
-				last_position[2] = position[2]
-
-				-- same for x
-				local now_move_x = position[1] - last_position[1]
-
-				local move_x_px = (now_move_x / factor) * x_adjust
-
-				if crouched then
-					move_x_px = move_x_px / 2
-				end
-
-				local x_px_leftovers = x_px_pool
-
-				local move_x_px_w_leftovers = move_x_px + x_px_leftovers
-
-				local move_x_px_floored = closest_int(move_x_px_w_leftovers)
-
-				x_px_pool = move_x_px_w_leftovers - move_x_px_floored
-
-				last_position[1] = position[1]
-
-				-- adjust recoil
-				MoveMouseRelative(-move_x_px_floored, -move_y_px_floored)
-
-				--OutputLogMessage("passed_ms: %f\nMoveMouseRelative(%f, %f)\nfactor: %f\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor)
-				--OutputLogMessage("now_move_y: %f\nmove_y_px: %f\nmove_y_px_w_leftovers: %f\nmove_y_px_floored: %f\ny_px_leftovers: %f\ny_px_pool: %f\n\n", passed_ms, -move_x_px_floored, -move_y_px_floored, factor, now_move_y, move_y_px, move_y_px_w_leftovers, move_y_px_floored, y_px_leftovers, y_px_pool)
-				--OutputLogMessage("now_move_x: %f\nmove_x_px: %f\nmove_x_px_w_leftovers: %f\nmove_x_px_floored: %f\nx_px_leftovers: %f\nx_px_pool: %f\n\n", now_move_x, move_x_px, move_x_px_w_leftovers, move_x_px_floored, x_px_leftovers, x_px_pool)
-			end
-
-			if use_atomic_sleep then
-				AtomicSleep(math.random(1,3))
-			else
-				Sleep(1)
-			end
-		until not IsMouseButtonPressed(1)
-	end
-
+		if use_atomic_sleep then
+			AtomicSleep(math.random(1,3))
+		else
+			Sleep(1)
+		end
+	until not IsMouseButtonPressed(1)
 	
 end
 
@@ -566,8 +499,6 @@ function OnEvent(event, arg)
 	-- fire script on main mouse button
 	if (event == "MOUSE_BUTTON_PRESSED" and arg == 1 and activated) then
 		FullAutoRecoil(start_ms, weapon_option)
-	elseif (event == "MOUSE_BUTTON_PRESSED" and arg == HIPFIRE_BUTTON and activated and not IsModifierPressed("alt")) then
-		Hipfire()
 	elseif (event == "PROFILE_ACTIVATED") then
     	-- enable trigger onevent when mb1 is pressed
         EnablePrimaryMouseButtonEvents(true)
@@ -588,7 +519,7 @@ function print_info()
 		mode = "legit"
 	end
 
-	OutputLogMessage("Weapon: %s, Mode: %s, Activated: %s\n", weapon_options[selected_weapon][1], mode, tostring(activated))
+	OutputLogMessage("Weapon: %s, Hipfire: %s, Mode: %s, Activated: %s\n", weapon_options[selected_weapon][1], tostring(hipfire), mode, tostring(activated))
 
     OutputLogMessage("Attachments:\n")
 	for index, attachment in ipairs(selected_attachments) do
