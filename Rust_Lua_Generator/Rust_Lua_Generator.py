@@ -1,10 +1,32 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import math
+import pickle
 from scipy.interpolate import make_interp_spline, BSpline
+from getkey import getkey, keys
+from datetime import datetime
+import glob
 
 def calc(weapon):
-   
+  
+    full_graph = build_graph(weapon.x, weapon.y, weapon.ms_per_shot, weapon.shots, weapon.name)
+    values = get_string_graph(full_graph)
+
+    return weapon.name + " = " + values
+
+def get_string_graph(full_vector):
+    string_vector_parts = []
+
+    for vector_part in full_vector:
+        string_vector_parts.append("{" + str(vector_part[0]) + ", " + str(vector_part[1]) + "}")
+
+
+    values = "{" + ", ".join(string_vector_parts) + "}"
+
+    return values
+
+
+def build_graph(x, y, ms_per_shot, shots, name):
     weapon_x = [0]
     weapon_y = [0]
     shot_ms = [0]
@@ -13,23 +35,23 @@ def calc(weapon):
     last_y = 0
    
     ms_passed = 0
-    for i in range(0, weapon.shots - 1):
+    for i in range(0, shots - 1):
 
-        x_val = weapon.x[i]
-        y_val = weapon.y[i]
+        x_val = x[i]
+        y_val = y[i]
 
         delta_x = x_val - last_x
         delta_y = y_val - last_y
         animation_time = math.sqrt((delta_x * delta_x) + (delta_y * delta_y)) / 0.02
    
         # only happens late on some bullets, animation time is hard capped by ms_per_shot
-        if animation_time > weapon.ms_per_shot: 
-            print(f'animation time larger than ms_per_shot {weapon.name} on shot {len(weapon_x)}')
+        if animation_time > ms_per_shot: 
+            print(f'animation time larger than ms_per_shot {name} on shot {len(weapon_x)}')
 
             weapon_x.append(x_val)
             weapon_y.append(y_val)
 
-            ms_passed+=weapon.ms_per_shot
+            ms_passed+=ms_per_shot
 
             shot_ms.append(ms_passed)
         else:
@@ -43,7 +65,7 @@ def calc(weapon):
 
             ms_passed_next = 0
 
-            ms_passed_next = weapon.ms_per_shot - animation_time
+            ms_passed_next = ms_per_shot - animation_time
 
             # only change time on next datapoint
             weapon_x.append(x_val)
@@ -61,29 +83,15 @@ def calc(weapon):
     fun_y = make_interp_spline(shot_ms, weapon_y, k=1)
     fun_x = make_interp_spline(shot_ms, weapon_x, k=1)
 
-    plt.plot(shot_ms, weapon_y, 'ro')
-    plt.plot(full_range, fun_y(full_range))
-    #plt.show()
-
-    plt.plot(shot_ms, weapon_x, 'ro')
-    plt.plot(full_range, fun_x(full_range))
+    plt.plot(fun_x(full_range), fun_y(full_range))
     #plt.show()
 
     full_vector = []
 
-    for i in range(0, int(weapon.shots * weapon.ms_per_shot)):
+    for i in range(0, int(shots * ms_per_shot)):
         full_vector.append([fun_x(i), fun_y(i)])
 
-    string_vector_parts = []
-
-    for vector_part in full_vector:
-        string_vector_parts.append("{" + str(vector_part[0]) + ", " + str(vector_part[1]) + "}")
-
-
-    values = "{" + ", ".join(string_vector_parts) + "}"
-
-
-    return weapon.name + " = " + values
+    return full_vector
 
 class Weapon:
 
@@ -93,6 +101,7 @@ class Weapon:
         self.x = x
         self.y = y
         self.ms_per_shot = repeat_delay
+
 
 weapons = []
 weapons.append(Weapon("ak", 133.30000638961792, 30, 
@@ -120,13 +129,133 @@ weapons.append(Weapon("thompson", 129.99999523162842, 20,
                       [0.7399524345182151,1.0113242215698288,0.8437103753398514,0.31278550034307934,-0.3338245942279136,-0.8446441579424624,-0.968982159641607,-0.6067921302544388,0.01632084668775846,0.6324615667530731,0.9737348255096734,0.8438976127423636,0.3745162665276691,-0.22635502972853772,-0.7514640680490192,-0.9935586404566443,-0.8620070859040752,-0.539790457889282,-0.19620062431773277],
                       [-1.5659557044685295,-3.109220788486232,-4.587917597165765,-5.96016847561979,-7.1840957689609635,-8.217821822301945,-9.093672222474856,-9.877483654967222,-10.577211727664578,-11.20081196930516,-11.756239908627201,-12.251451074368939,-12.694400995268605,-13.093045200064433,-13.45533921749466,-13.789238576297523,-14.10269880521125,-14.403675432974085,-14.700123988324258]))
 
+def save(weapon_name, x_values, y_values):
+    save_obj = {"weapon_name": weapon_name, "x_values": x_values, "y_values" : y_values}
+    ts = datetime.now().strftime("%d-%H-%M-%S")
+    file_name = f'{weapon_name}_{ts}.obj'
+    with open(file_name, "wb") as obj:
+        pickle.dump(save_obj, obj, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f'saved {file_name}')
 
-vectors = []
+def load_save_objects():
+    obj_store = []
+    for obj in glob.glob("*.obj"):
+        with open(obj, "rb") as handle:
+            loaded = pickle.load(handle)
+            obj_store.append(loaded)
+    return obj_store
+
+def graph_generation():
+    saved_graphs = load_save_objects()
+
+    weapons_str = ', '.join(w.name for w in weapons) 
+    desired_action = input(f'select weapon: {weapons_str}')
+
+    selected_weapon = None
+    for weapon in weapons:
+        if weapon.name == desired_action:
+            selected_weapon = weapon
+    
+    if selected_weapon is None:
+        print(f"no weapon with name{desired_action} was found")
+        return
+
+    print(f'Selected Weapon: {selected_weapon.name}')
+
+    desired_action = input("1. list existing or 2. add new")
+
+    if desired_action.startswith("1"):
+        fitting_graphs = []
+        for graph in saved_graphs:
+            if graph["weapon_name"] == selected_weapon.name:
+                fitting_graphs.append(graph)
+
+        plt.plot(selected_weapon.x, selected_weapon.y, c="red")
+        for graph in fitting_graphs:
+            plt.plot(graph["x_values"], graph["y_values"])
+
+        plt.show(block=True)
+
+    elif desired_action.startswith("2"):
+
+        step = 0.05
+        y_values = selected_weapon.y.copy()
+        x_values = selected_weapon.x.copy()
+        plt.scatter(selected_weapon.x, selected_weapon.y, c="blue")
+        edit = plt.scatter(x_values, y_values)
+        plt.show(block=False)
+        plt.pause(0.001)
+        
+        current_shot = 0
+        action = None
+        while action != 'q':
+        
+            action = getkey()
+            if action == keys.UP:
+                y_values[current_shot] = y_values[current_shot]+step
+                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+            elif action == keys.DOWN:
+                y_values[current_shot] = y_values[current_shot]-step
+                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+            elif action == keys.LEFT:
+                x_values[current_shot] = x_values[current_shot]-step
+                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+            elif action == keys.RIGHT:
+                x_values[current_shot] = x_values[current_shot]+step
+                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+            elif action == 'n':#next shot
+                current_shot = current_shot+1
+                print(f'current_shot: {current_shot}', end="\r")
+            elif action  == 'p':# previous shot
+                current_shot = current_shot-1
+                print(f'current_shot: {current_shot}', end="\r")
+            elif action == 's':#save the values
+                save(selected_weapon.name, x_values, y_values)
+        
+            edit.remove()
+            edit = plt.scatter(x_values, y_values, c="red")
+            plt.pause(0.001)
+        
+
+def initial_actions_prompt():
+    desired_action = input("wdywtd? 1. generate graphs, 2. add legit pattern")
+
+    if desired_action.startswith("1"):
+
+        tryout_graphs = load_save_objects()
+
+        tryout_res_dict = {}
+
+        for tryout_graph in tryout_graphs:
+            search_weapon = None
+            for weapon in weapons:
+                if weapon.name == tryout_graph["weapon_name"]:
+                    search_weapon = weapon
+
+            full_vector = build_graph(tryout_graph["x_values"], tryout_graph["y_values"], search_weapon.ms_per_shot, search_weapon.shots, search_weapon.name)
+            if search_weapon.name in tryout_res_dict:
+                tryout_res_dict[search_weapon.name].append(get_string_graph(full_vector))
+            else:
+                tryout_res_dict[search_weapon.name] = [get_string_graph(full_vector)]
+
+        str_graphs = []
+        # build the lua object
+        for name, graphs in tryout_res_dict.items():
+            str_graph = name + " = " + "{" + ", ".join(graphs) + "}"
+            str_graphs.append(str_graph)
+
+        tryout_weapon_data = "{\n" + "\n, ".join(str_graphs) + "\n}"
 
 
-for weapon in weapons:
-    vectors.append(calc(weapon))
+        vectors = []
 
+        for weapon in weapons:
+            vectors.append(calc(weapon))
 
-full_weapon_data = "{\n"+"\n,".join(vectors) + "\n}"
-wait = 1
+        full_weapon_data = "{\n"+"\n,".join(vectors) + "\n}"
+        print("\n\n" + full_weapon_data)#break here for easy copy
+
+    elif desired_action.startswith("2"):
+        graph_generation()
+
+initial_actions_prompt()
