@@ -7,6 +7,9 @@ from getkey import getkey, keys
 from datetime import datetime
 import glob
 
+manager = plt.get_current_fig_manager()
+manager.window.state('zoomed')
+
 def calc(weapon):
   
     full_graph = build_graph(weapon.x, weapon.y, weapon.ms_per_shot, weapon.shots, weapon.name)
@@ -130,6 +133,9 @@ weapons.append(Weapon("thompson", 129.99999523162842, 20,
                       [-1.5659557044685295,-3.109220788486232,-4.587917597165765,-5.96016847561979,-7.1840957689609635,-8.217821822301945,-9.093672222474856,-9.877483654967222,-10.577211727664578,-11.20081196930516,-11.756239908627201,-12.251451074368939,-12.694400995268605,-13.093045200064433,-13.45533921749466,-13.789238576297523,-14.10269880521125,-14.403675432974085,-14.700123988324258]))
 
 def save(weapon_name, x_values, y_values):
+    # remove the first added shot for saving
+    x_values.pop(0)
+    y_values.pop(0)
     save_obj = {"weapon_name": weapon_name, "x_values": x_values, "y_values" : y_values}
     ts = datetime.now().strftime("%d-%H-%M-%S")
     file_name = f'{weapon_name}_{ts}.obj'
@@ -162,59 +168,81 @@ def graph_generation():
 
     print(f'Selected Weapon: {selected_weapon.name}')
 
-    desired_action = input("1. list existing or 2. add new")
+    # add first shot for better visualisation
+    selected_weapon.x.insert(0, 0)
+    selected_weapon.y.insert(0, 0)
 
-    if desired_action.startswith("1"):
-        fitting_graphs = []
-        for graph in saved_graphs:
-            if graph["weapon_name"] == selected_weapon.name:
-                fitting_graphs.append(graph)
+    #plot original
+    plt.scatter(selected_weapon.x, selected_weapon.y, c="blue", s=3)
 
-        plt.plot(selected_weapon.x, selected_weapon.y, c="red")
-        for graph in fitting_graphs:
-            plt.plot(graph["x_values"], graph["y_values"])
+    #plot loaded
+    fitting_graphs = []
+    for graph in saved_graphs:
+        if graph["weapon_name"] == selected_weapon.name:
+            fitting_graphs.append(graph)
 
-        plt.show(block=True)
+    for graph in fitting_graphs:
+        plt.scatter(graph["x_values"], graph["y_values"], s=3)
 
-    elif desired_action.startswith("2"):
-
-        step = 0.05
-        y_values = selected_weapon.y.copy()
-        x_values = selected_weapon.x.copy()
-        plt.scatter(selected_weapon.x, selected_weapon.y, c="blue")
-        edit = plt.scatter(x_values, y_values)
-        plt.show(block=False)
-        plt.pause(0.001)
+  
+    # new loop
+    step = 0.01
+    y_values = selected_weapon.y.copy()
+    x_values = selected_weapon.x.copy()
+    edit = plt.scatter(x_values, y_values)
+    plt.show(block=False)
+    plt.pause(0.001)
         
-        current_shot = 0
-        action = None
-        while action != 'q':
+    current_shot = 1
+    action = None
+    while action != 'q':
         
-            action = getkey()
-            if action == keys.UP:
+        action = getkey()
+        if action == keys.UP:
+            if (y_values[current_shot] + step) < y_values[current_shot-1]:
                 y_values[current_shot] = y_values[current_shot]+step
                 print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
-            elif action == keys.DOWN:
+            else:
+                print("cant move up cuz y recoil vector always has to be negative")
+        elif action == keys.DOWN: 
+            if current_shot +1 >= len(y_values):
+                y_values[current_shot] = y_values[current_shot]-step
+            elif (y_values[current_shot]-step) > y_values[current_shot+1]:
                 y_values[current_shot] = y_values[current_shot]-step
                 print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
-            elif action == keys.LEFT:
-                x_values[current_shot] = x_values[current_shot]-step
-                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
-            elif action == keys.RIGHT:
-                x_values[current_shot] = x_values[current_shot]+step
-                print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
-            elif action == 'n':#next shot
-                current_shot = current_shot+1
-                print(f'current_shot: {current_shot}', end="\r")
-            elif action  == 'p':# previous shot
-                current_shot = current_shot-1
-                print(f'current_shot: {current_shot}', end="\r")
-            elif action == 's':#save the values
-                save(selected_weapon.name, x_values, y_values)
-        
-            edit.remove()
-            edit = plt.scatter(x_values, y_values, c="red")
-            plt.pause(0.001)
+            else:
+                print("cant move down cuz y recoil vector always has to be negative")
+        elif action == keys.LEFT:
+            x_values[current_shot] = x_values[current_shot]-step
+            print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+        elif action == keys.RIGHT:
+            x_values[current_shot] = x_values[current_shot]+step
+            print(f'y_values[{current_shot}] = {y_values[current_shot]}, x_values[{current_shot}] = {x_values[current_shot]}', end="\r")
+        elif action == '-':#next shot
+            current_shot = current_shot+1
+            print(f'current_shot: {current_shot}', end="\r")
+        elif action  == '.':# previous shot
+            current_shot = current_shot-1
+            print(f'current_shot: {current_shot}', end="\r")
+        elif action == 'r':#reset current shot
+            y_values[current_shot] = selected_weapon.y[current_shot]
+            x_values[current_shot] = selected_weapon.x[current_shot]
+        elif action == 's':#save current
+            save(selected_weapon.name, x_values, y_values)
+            print("saved")
+        elif action == 'n':#new one + save current
+            save(selected_weapon.name, x_values, y_values)
+            # plot the current (we are gonna use red for the current to edit)
+            plt.scatter(x_values, y_values, s=1)
+
+            y_values = selected_weapon.y.copy()
+            x_values = selected_weapon.x.copy()
+            current_shot = 1
+            print("added new + current shot = 1")
+
+        edit.remove()
+        edit = plt.scatter(x_values, y_values, c="red", s=3)
+        plt.pause(0.001)
         
 
 def initial_actions_prompt():
